@@ -1,20 +1,7 @@
 (function () {
   'use strict';
 
-  // ── Smooth scroll for anchor links (JS-enhanced; CSS scroll-behavior is the fallback) ──
-  document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
-    anchor.addEventListener('click', function (e) {
-      var id = this.getAttribute('href');
-      if (id.length < 2) return; // bare "#" — no target
-      var target = document.querySelector(id);
-      if (!target) return;
-      e.preventDefault();
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      history.pushState(null, '', id);
-    });
-  });
-
-  // ── Suppress transitions on resize to prevent nav flash at breakpoint ──
+  // ── Suppress transitions during resize ──
   var resizeTimer;
   window.addEventListener('resize', function () {
     document.body.classList.add('is-resizing');
@@ -44,70 +31,45 @@
     navToggle.setAttribute('aria-expanded', 'false');
   }
 
-  function toggleNav() {
-    header.classList.contains('nav-open') ? closeNav() : openNav();
-  }
-
   if (navToggle) {
     navToggle.addEventListener('click', function (e) {
       e.stopPropagation();
-      toggleNav();
+      header.classList.contains('nav-open') ? closeNav() : openNav();
     });
 
-    // Close when a nav link is clicked
     siteNav.querySelectorAll('a').forEach(function (link) {
       link.addEventListener('click', function () { closeNav(); });
     });
 
-    // Close on Escape
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeNav();
     });
 
-    // Close on outside click
     document.addEventListener('click', function (e) {
       if (!header.contains(e.target)) closeNav();
     });
   }
 
-  // ── Active nav link via IntersectionObserver ──
-  var sections = document.querySelectorAll('section[id]');
-  var navLinks = document.querySelectorAll('#site-header nav a');
+  // ── Active nav link (based on current page filename) ──
+  var currentFile = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('#site-nav a').forEach(function (link) {
+    var linkFile = link.getAttribute('href').split('/').pop();
+    link.classList.toggle('active', linkFile === currentFile);
+  });
 
-  if ('IntersectionObserver' in window) {
-    var navObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          var id = '#' + entry.target.id;
-          navLinks.forEach(function (link) {
-            link.classList.toggle('active', link.getAttribute('href') === id);
-          });
-        }
-      });
-    }, { rootMargin: '-25% 0px -65% 0px' });
-
-    sections.forEach(function (s) { navObserver.observe(s); });
-  }
-
-  // ── Fade-in on scroll ──
-  var fadeTargets = document.querySelectorAll(
-    '.timeline-item, .edu-item, .accomplishments-block, .summary-text, .contact-link'
-  );
-
-  if ('IntersectionObserver' in window) {
-    fadeTargets.forEach(function (el) { el.classList.add('fade-in'); });
-
-    var fadeObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          fadeObserver.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.08 });
-
-    fadeTargets.forEach(function (el) { fadeObserver.observe(el); });
-  }
-  // If IntersectionObserver unsupported, elements stay fully visible (no fade-in class added)
+  // ── Page fade-out on navigation ──
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    // Skip: anchors, external URLs, mailto/tel, links that open in a new tab
+    if (!href || href.startsWith('#') || href.startsWith('http') ||
+        href.startsWith('mailto:') || href.startsWith('tel:') || link.target) return;
+    e.preventDefault();
+    document.body.classList.add('is-leaving');
+    setTimeout(function () {
+      window.location.href = href;
+    }, 280);
+  });
 
 }());
