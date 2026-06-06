@@ -72,4 +72,21 @@
     }, 280);
   });
 
+  // ── Contact form → mailto ──
+  var contactForm = document.querySelector('.contact-form');
+  if (contactForm) {
+    contactForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name    = contactForm.querySelector('[name="name"]').value.trim();
+      var email   = contactForm.querySelector('[name="email"]').value.trim();
+      var subject = contactForm.querySelector('[name="subject"]').value.trim();
+      var message = contactForm.querySelector('[name="message"]').value.trim();
+
+      var body = 'From: ' + name + ' <' + email + '>\n\n' + message;
+      window.location.href = 'mailto:graysondavella3@gmail.com'
+        + '?subject=' + encodeURIComponent(subject || '(No subject)')
+        + '&body='    + encodeURIComponent(body);
+    });
+  }
+
 }());
